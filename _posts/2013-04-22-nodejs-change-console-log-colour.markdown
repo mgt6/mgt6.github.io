@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Changing the Console log colour in Node"
+title:  "Changing the Console log colour in Node.js"
 date:   2013-04-22
 categories: nodejs command-line
 ---
