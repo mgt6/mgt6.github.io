@@ -2,6 +2,7 @@
 layout: post
 title:  "Command Line Applications in Node.js"
 date:   2013-05-23
+author: Mark Taylor
 categories: nodejs command-line
 ---
 

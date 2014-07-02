@@ -2,6 +2,7 @@
 layout: post
 title:  "Continuous Testing in Node.js"
 date:   2013-04-16
+author: Mark Taylor
 categories: nodejs command-line
 ---
 

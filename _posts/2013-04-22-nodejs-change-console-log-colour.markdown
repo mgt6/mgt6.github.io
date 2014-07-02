@@ -2,6 +2,7 @@
 layout: post
 title:  "Changing the Console log colour in Node.js"
 date:   2013-04-22
+author: Mark Taylor 
 categories: nodejs command-line
 ---
 Changing the text colour in a console.log message in Node.js is very simple, you can do it by using ANSI escape codes for example:
