@@ -1,0 +1,163 @@
+---
+layout: post
+title:  "Rabbit Pi"
+date:   2012-11-25
+categories: raspberry-pi nodejs android
+---
+
+##Introduction
+
+After recently getting a RaspberryPI board I decided to investigate controlling it via AMQP. AMQP offers many advantages as a middle ware protocol, I won't be taking full advantage of these in this post but hope to cover more at a later date.
+
+For my AMQP middleware I will be using a RabbitMQ server running on the pi itself, although it doesn't need to run on the PI, I was interested to see how well it would scale.
+
+My first Idea for a basic investigatory application was a node.js server listening for a message on a RabbitMQ queue and simply writing the message it receives out through its console.log function. To send the message I decided to have a very simple Android app which I could run on my phone simply take the text from a TextView component and publish that to the RabbitMQ server running on the PI.
+
+This will act like the Hello World application from the tutorial supplied on the RabbitMQ website
+
+##Setting up the RaspberryPI
+
+To install RabbitMQ you will first need to add as a source to the list of sources which Debian uses to install software from. Once this is done then update the sources list and install the package. Installing the package will start the service and set it to start running each time the RaspberryPI is turned on. You may also want to install the management interface for RabbitMQ which will allow you to manage the server through a web interface. Once the management console is installed you will need to restart the service. This can be achieved with the following command line commands.
+
+{% highlight bash %}
+sudo  echo deb http://www.rabbitmq.com/debian/ testing main >> /etc/apt/sources.list
+
+sudo apt-get update
+
+sudo apt-get install rabbitmq-server
+
+sudo rabbitmq-plugins enable rabbitmq_management
+
+sudo /etc/init.d/rabbitmq-server restart
+{% endhighlight %}
+
+Once RabbitMQ is installed you can accesses the management interface by navigating to your PI's IP address and adding :55672/#/, for example 127.0.0.1:55672/#/. If you don't know the ip address of your PI then run:
+
+{% highlight bash %}
+ifconfig
+{% endhighlight %}
+
+The interface will then prompt you for a username and password, by default both of these are guest.
+To install node-js simply run
+
+{% highlight bash %}
+sudo apt-get install nodejs
+{% endhighlight %}
+
+##Node Server
+
+In order to create a node server which subscribes to AMQP you will need to install the node module amqp. Just navigate to the root of your node server and run the following command:
+
+{% highlight bash %}
+npm install amqp
+Create a file called server.js and add the following code:
+{% endhighlight %}
+
+{% highlight javascript %}
+var amqp = require('amqp'),
+    config = require('./config.js');
+
+var connection = amqp.createConnection({
+   host: '192.168.0.11',
+   port: 5672,
+   login: 'guest',
+   password: 'guest',
+   vhost: '/',
+});
+
+connection.on('ready', function () {
+    connection.queue('my-queue', function(q){
+        q.bind('#');
+        q.subscribe(function (message) {
+            console.log(message.data.toString());
+
+        });
+    });
+});
+{% endhighlight %}
+This code creates a new connection to the RabbitMQ service and if the queue called my-queue exists then it will connect to it, if it doesn't then it will create it. Then the it binds to all all messages and subscribes to the queue. The subscribe method will keep the server running until it is forced to close. Each time a message is received on the queue 'my-queue' the function defined within subscribe is called and the message is written to the console.
+
+The server.js file can then be run by running
+{% highlight bash %}
+node server.js
+{% endhighlight %}
+If the service has run correctly, you should be able to see a new queue called 'my-queue' under the queues tab in the management interface. If you click on publish message and type a message to send after you publish the message you should see it printed out in the console of the running node service. When you stop the service the queue should then be destroyed.
+Obviously this isn't particularly useful functionality, but it is a good start. This code could for example be extended to perform an action depending on the message received, for example write a state to a gpio pin or read the state from it and send this back down to the sender.
+
+In another post I will be looking at periodically reading data from a GPIO pin and publishing this data to all consumers listening via a publish/subscribe pattern.
+
+##Android App
+
+To Publish messages to the queue I created a simple Android app, which allows me to send messages from my phone to the PI via AMQP. The user interface leaves a lot to be desired but it is functional.
+
+I started by adding a button and a text view to the layout file
+
+{% highlight xml %}
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+        >
+    <EditText android:id="@+id/edit_message"
+              android:layout_weight="1"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+              android:hint="@string/edit_message" />
+    <Button
+            android:id="@+id/button_send"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/button_send" />
+</LinearLayout>
+{% endhighlight %}
+Then adding an event listener to the button which when clicked gets the text of the text view and passes it to the sendMessage method. Then it clears the text in the view.
+
+{% highlight java %}
+   /**
+     * Called when the activity is first created.
+     */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+
+        final Button button = (Button) findViewById(R.id.button_send);
+        final TextView textView = (TextView) findViewById(R.id.edit_message);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendMessage(textView.getText().toString());
+                textView.setText("");
+            }
+        });
+    }
+{% endhighlight %}
+In order to make use of the RabbitMQ client I downloaded the java client from here and added the commons-cli, commons-io and rabbitmq-client jar files to a lib folder in the application. I then added the libraries my project structure in my IDE, this will be different depending on the IDE.
+
+{% highlight java %}
+ private void sendMessage(String message) {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost(HOST_NAME);
+        try {
+            Connection connection = factory.newConnection();
+            Channel channel = connection.createChannel();
+            channel.basicPublish("", QUEUE_NAME, null, message.getBytes());
+            channel.close();
+            connection.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+{% endhighlight %}
+This method connects to the queue which the node server is listening to and sends the message as a byte array.
+
+The final thing that needs to be added is giving the application permission to send data over the network, which is done by updating the manifest file.
+
+{% highlight xml %}
+<uses-permission android:name="android.permission.INTERNET"></uses-permission >
+{% endhighlight %}
+Now if your phone is connected to the same network, or if you exposes the RabbitMQ service over the internet, you should be able to send messages from your phone to your RaspberryPI which will log them on the console output. As I said earlier, not very useful at the moment, but it is the start of a good framework for communicating between the RaspberryPI and an external application. Of course the RabbitMQ server doesn't have to be running on the RaspberryPI, it could be elsewhere on the network or even on a remote server on the internet.
+
