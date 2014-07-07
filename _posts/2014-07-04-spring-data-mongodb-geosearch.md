@@ -2,7 +2,7 @@
 layout: post
 title:  "Geo Searching using Mongodb and Spring Data"
 date:   2014-07-04
-categories: spring-data, mongodb, java, geosearch 
+categories: spring-data mongodb java geosearch 
 author: Mark Taylor
 ---
 
