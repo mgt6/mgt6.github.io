@@ -4,6 +4,7 @@ title:  "Book recommendations for Java Developers"
 date:   2014-07-09
 categories: java books 
 author: Mark Taylor
+excerpt: <p>Although there are plenty of articles and blog posts on the topics included in the following books, I still find books are a far more effective way to learn for a number of reasons.</p>  
 ---
 ##Introduction
 

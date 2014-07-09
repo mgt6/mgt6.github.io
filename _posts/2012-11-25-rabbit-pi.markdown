@@ -4,6 +4,7 @@ title:  "Rabbit Pi"
 date:   2012-11-25
 categories: raspberry-pi nodejs android
 author: Mark Taylor
+excerpt: <p>After recently getting a RaspberryPI board I decided to investigate controlling it via AMQP.</p>
 ---
 
 ##Introduction

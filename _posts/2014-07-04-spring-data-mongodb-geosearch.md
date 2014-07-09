@@ -4,6 +4,7 @@ title:  "Geo Searching using Mongodb and Spring Data"
 date:   2014-07-04
 categories: spring-data mongodb java geosearch 
 author: Mark Taylor
+excerpt: <p>Using Spring Data and Spring Boot, it is possible to very quickly make applications which perform CRUD operations and perform complex searches on database.</p>
 ---
 
 ##Introduction
